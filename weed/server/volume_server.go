@@ -50,6 +50,8 @@ type VolumeServer struct {
 	fileSizeLimitBytes      int64
 	isHeartbeating          bool
 	stopChan                chan bool
+	peer                    string
+	peerPort                int
 }
 
 func NewVolumeServer(adminMux, publicMux *http.ServeMux, ip string,
@@ -70,6 +72,8 @@ func NewVolumeServer(adminMux, publicMux *http.ServeMux, ip string,
 	hasSlowRead bool,
 	readBufferSizeMB int,
 	ldbTimeout int64,
+	peer string,
+	peerPort int,
 ) *VolumeServer {
 
 	v := util.GetViper()
@@ -102,12 +106,14 @@ func NewVolumeServer(adminMux, publicMux *http.ServeMux, ip string,
 		hasSlowRead:                   hasSlowRead,
 		readBufferSizeMB:              readBufferSizeMB,
 		ldbTimout:                     ldbTimeout,
+		peer:                          peer,
+		peerPort:                      peerPort,
 	}
 	vs.SeedMasterNodes = masterNodes
 
 	vs.checkWithMaster()
 
-	vs.store = storage.NewStore(vs.grpcDialOption, ip, port, grpcPort, publicUrl, folders, maxCounts, minFreeSpaces, idxFolder, vs.needleMapKind, diskTypes, ldbTimeout)
+	vs.store = storage.NewStore(vs.grpcDialOption, ip, port, grpcPort, publicUrl, folders, maxCounts, minFreeSpaces, idxFolder, vs.needleMapKind, diskTypes, ldbTimeout, peer, peerPort)
 	vs.guard = security.NewGuard(whiteList, signingKey, expiresAfterSec, readSigningKey, readExpiresAfterSec)
 
 	handleStaticResources(adminMux)

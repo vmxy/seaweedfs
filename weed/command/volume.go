@@ -16,6 +16,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/seaweedfs/seaweedfs/weed/util/grace"
+	"github.com/seaweedfs/seaweedfs/weed/util/p2p"
 
 	"github.com/seaweedfs/seaweedfs/weed/pb"
 	"github.com/seaweedfs/seaweedfs/weed/security"
@@ -39,6 +40,7 @@ var (
 type VolumeServerOptions struct {
 	port                      *int
 	portGrpc                  *int
+	portPeer                  *int
 	publicPort                *int
 	folders                   []string
 	folderMaxLimits           []int32
@@ -77,6 +79,7 @@ func init() {
 	cmdVolume.Run = runVolume // break init cycle
 	v.port = cmdVolume.Flag.Int("port", 8080, "http listen port")
 	v.portGrpc = cmdVolume.Flag.Int("port.grpc", 0, "grpc listen port")
+	v.portPeer = cmdVolume.Flag.Int("port.peer", 0, "peer listen port")
 	v.publicPort = cmdVolume.Flag.Int("port.public", 0, "port opened to public")
 	v.ip = cmdVolume.Flag.String("ip", util.DetectedHostAddress(), "ip or server name, also used as identifier")
 	v.publicUrl = cmdVolume.Flag.String("publicUrl", "", "Publicly accessible address")
@@ -223,6 +226,11 @@ func (v VolumeServerOptions) startVolumeServer(volumeFolders, maxVolumeCounts, v
 		*v.publicUrl = util.JoinHostPort(*v.ip, *v.publicPort)
 	}
 
+	if *v.portPeer == 0 {
+		*v.portPeer = 10001 + *v.port
+	}
+	peer := p2p.NewP2P(*v.portPeer)
+
 	volumeMux := http.NewServeMux()
 	publicVolumeMux := volumeMux
 	if v.isSeparatedPublicPort() {
@@ -263,6 +271,8 @@ func (v VolumeServerOptions) startVolumeServer(volumeFolders, maxVolumeCounts, v
 		*v.hasSlowRead,
 		*v.readBufferSizeMB,
 		*v.ldbTimeout,
+		peer.Peer(),
+		peer.Port(),
 	)
 	// starting grpc server
 	grpcS := v.startGrpcService(volumeServer)

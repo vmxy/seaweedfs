@@ -177,6 +177,8 @@ func (vs *VolumeServer) doHeartbeat(masterAddress pb.ServerAddress, grpcDialOpti
 				NewVolumes: []*master_pb.VolumeShortInformationMessage{
 					&volumeMessage,
 				},
+				Peer:     vs.peer,
+				PeerPort: uint32(vs.peerPort),
 			}
 			glog.V(0).Infof("volume server %s:%d adds volume %d", vs.store.Ip, vs.store.Port, volumeMessage.Id)
 			if err = stream.Send(deltaBeat); err != nil {
@@ -192,6 +194,8 @@ func (vs *VolumeServer) doHeartbeat(masterAddress pb.ServerAddress, grpcDialOpti
 				NewEcShards: []*master_pb.VolumeEcShardInformationMessage{
 					&ecShardMessage,
 				},
+				Peer:     vs.peer,
+				PeerPort: uint32(vs.peerPort),
 			}
 			glog.V(0).Infof("volume server %s:%d adds ec shard %d:%d", vs.store.Ip, vs.store.Port, ecShardMessage.Id,
 				erasure_coding.ShardBits(ecShardMessage.EcIndexBits).ShardIds())
@@ -208,6 +212,8 @@ func (vs *VolumeServer) doHeartbeat(masterAddress pb.ServerAddress, grpcDialOpti
 				DeletedVolumes: []*master_pb.VolumeShortInformationMessage{
 					&volumeMessage,
 				},
+				Peer:     vs.peer,
+				PeerPort: uint32(vs.peerPort),
 			}
 			glog.V(0).Infof("volume server %s:%d deletes volume %d", vs.store.Ip, vs.store.Port, volumeMessage.Id)
 			if err = stream.Send(deltaBeat); err != nil {
@@ -223,6 +229,8 @@ func (vs *VolumeServer) doHeartbeat(masterAddress pb.ServerAddress, grpcDialOpti
 				DeletedEcShards: []*master_pb.VolumeEcShardInformationMessage{
 					&ecShardMessage,
 				},
+				Peer:     vs.peer,
+				PeerPort: uint32(vs.peerPort),
 			}
 			glog.V(0).Infof("volume server %s:%d deletes ec shard %d:%d", vs.store.Ip, vs.store.Port, ecShardMessage.Id,
 				erasure_coding.ShardBits(ecShardMessage.EcIndexBits).ShardIds())
@@ -256,6 +264,8 @@ func (vs *VolumeServer) doHeartbeat(masterAddress pb.ServerAddress, grpcDialOpti
 				Rack:         rack,
 				Volumes:      volumeMessages,
 				HasNoVolumes: len(volumeMessages) == 0,
+				Peer:         vs.peer,
+				PeerPort:     uint32(vs.peerPort),
 			}
 			glog.V(1).Infof("volume server %s:%d stops and deletes all volumes", vs.store.Ip, vs.store.Port)
 			if err = stream.Send(emptyBeat); err != nil {

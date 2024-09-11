@@ -75,6 +75,7 @@
                 <th>Data Center</th>
                 <th>Rack</th>
                 <th>RemoteAddr</th>
+                <th>Peer</th>
                 <th>#Volumes</th>
                 <th>Volume Ids</th>
                 <th>#ErasureCodingShards</th>
@@ -93,6 +94,7 @@
                     / <a href="http://{{ $dn.PublicUrl }}/ui/index.html">{{ $dn.PublicUrl }}</a>
                     {{ end }}
                 </td>
+                <td>{{$dn.Peer}}:{{$dn.PeerPort}}</td>
                 <td>{{ $dn.Volumes }}</td>
                 <td>{{ $dn.VolumeIds}}</td>
                 <td>{{ $dn.EcShards }}</td>

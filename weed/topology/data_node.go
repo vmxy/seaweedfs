@@ -22,6 +22,8 @@ type DataNode struct {
 	LastSeen      int64 // unix time in seconds
 	Counter       int   // in race condition, the previous dataNode was not dead
 	IsTerminating bool
+	Peer          string
+	PeerPort      int
 }
 
 func NewDataNode(id string) *DataNode {
@@ -238,6 +240,8 @@ type DataNodeInfo struct {
 	EcShards  int64  `json:"EcShards"`
 	Max       int64  `json:"Max"`
 	VolumeIds string `json:"VolumeIds"`
+	Peer      string `json:"Peer"`
+	PeerPort  int    `json:"PeerPort"`
 }
 
 func (dn *DataNode) ToInfo() (info DataNodeInfo) {
@@ -262,7 +266,8 @@ func (dn *DataNode) ToInfo() (info DataNodeInfo) {
 	info.EcShards = ecShardCount
 	info.Max = maxVolumeCount
 	info.VolumeIds = volumeIds
-
+	info.Peer = dn.Peer
+	info.PeerPort = dn.PeerPort
 	return
 }
 

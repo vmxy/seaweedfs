@@ -72,6 +72,8 @@ type Store struct {
 	NewEcShardsChan     chan master_pb.VolumeEcShardInformationMessage
 	DeletedEcShardsChan chan master_pb.VolumeEcShardInformationMessage
 	isStopping          bool
+	Peer                string
+	PeerPort            int
 }
 
 func (s *Store) String() (str string) {
@@ -80,8 +82,11 @@ func (s *Store) String() (str string) {
 }
 
 func NewStore(grpcDialOption grpc.DialOption, ip string, port int, grpcPort int, publicUrl string, dirnames []string, maxVolumeCounts []int32,
-	minFreeSpaces []util.MinFreeSpace, idxFolder string, needleMapKind NeedleMapKind, diskTypes []DiskType, ldbTimeout int64) (s *Store) {
-	s = &Store{grpcDialOption: grpcDialOption, Port: port, Ip: ip, GrpcPort: grpcPort, PublicUrl: publicUrl, NeedleMapKind: needleMapKind}
+	minFreeSpaces []util.MinFreeSpace, idxFolder string, needleMapKind NeedleMapKind, diskTypes []DiskType, ldbTimeout int64,
+	peer string,
+	peerPort int,
+) (s *Store) {
+	s = &Store{grpcDialOption: grpcDialOption, Port: port, Ip: ip, GrpcPort: grpcPort, PublicUrl: publicUrl, NeedleMapKind: needleMapKind, Peer: peer, PeerPort: peerPort}
 	s.Locations = make([]*DiskLocation, 0)
 
 	var wg sync.WaitGroup
@@ -359,7 +364,6 @@ func (s *Store) CollectHeartbeat() *master_pb.Heartbeat {
 			stats.VolumeServerReadOnlyVolumeGauge.WithLabelValues(col, t).Set(float64(count))
 		}
 	}
-
 	return &master_pb.Heartbeat{
 		Ip:              s.Ip,
 		Port:            uint32(s.Port),
@@ -374,6 +378,8 @@ func (s *Store) CollectHeartbeat() *master_pb.Heartbeat {
 		HasNoVolumes:    len(volumeMessages) == 0,
 		HasNoEcShards:   len(ecVolumeMessages) == 0,
 		LocationUuids:   uuidList,
+		Peer:            s.Peer,
+		PeerPort:        uint32(s.PeerPort),
 	}
 
 }

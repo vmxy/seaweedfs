@@ -1,9 +1,10 @@
 package topology
 
 import (
+	"strings"
+
 	"github.com/seaweedfs/seaweedfs/weed/pb/master_pb"
 	"golang.org/x/exp/slices"
-	"strings"
 )
 
 type TopologyInfo struct {
@@ -22,6 +23,7 @@ func (t *Topology) ToInfo() (info TopologyInfo) {
 	info.Max = t.diskUsages.GetMaxVolumeCount()
 	info.Free = t.diskUsages.FreeSpace()
 	var dcs []DataCenterInfo
+
 	for _, c := range t.Children() {
 		dc := c.(*DataCenter)
 		dcs = append(dcs, dc.ToInfo())

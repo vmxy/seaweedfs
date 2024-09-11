@@ -1,12 +1,14 @@
 package topology
 
 import (
+	"fmt"
+	"strings"
+	"time"
+
 	"github.com/seaweedfs/seaweedfs/weed/pb/master_pb"
 	"github.com/seaweedfs/seaweedfs/weed/storage/types"
 	"github.com/seaweedfs/seaweedfs/weed/util"
 	"golang.org/x/exp/slices"
-	"strings"
-	"time"
 )
 
 type Rack struct {
@@ -32,13 +34,17 @@ func (r *Rack) FindDataNode(ip string, port int) *DataNode {
 	}
 	return nil
 }
-func (r *Rack) GetOrCreateDataNode(ip string, port int, grpcPort int, publicUrl string, maxVolumeCounts map[string]uint32) *DataNode {
+func (r *Rack) GetOrCreateDataNode(ip string, port int, grpcPort int, publicUrl string, maxVolumeCounts map[string]uint32,
+	peer string,
+	peerPort int,
+) *DataNode {
 	r.Lock()
 	defer r.Unlock()
 	for _, c := range r.children {
 		dn := c.(*DataNode)
 		if dn.MatchLocation(ip, port) {
 			dn.LastSeen = time.Now().Unix()
+			fmt.Println("=======================return dnxx")
 			return dn
 		}
 	}
@@ -48,6 +54,8 @@ func (r *Rack) GetOrCreateDataNode(ip string, port int, grpcPort int, publicUrl 
 	dn.GrpcPort = grpcPort
 	dn.PublicUrl = publicUrl
 	dn.LastSeen = time.Now().Unix()
+	dn.Peer = peer
+	dn.PeerPort = peerPort
 	r.doLinkChildNode(dn)
 	for diskType, maxVolumeCount := range maxVolumeCounts {
 		disk := NewDisk(diskType)
