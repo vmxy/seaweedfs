@@ -3,6 +3,7 @@ package weed_server
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/seaweedfs/seaweedfs/weed/operation"
@@ -34,6 +35,14 @@ func (vs *VolumeServer) checkWithMaster() (err error) {
 					return fmt.Errorf("get master %s configuration: %v", master, err)
 				}
 				vs.metricsAddress, vs.metricsIntervalSec = resp.MetricsAddress, int(resp.MetricsIntervalSeconds)
+				fmt.Println("address======", resp, master.ToIP())
+				if len(resp.PeerAddrs) > 0 {
+					addr := resp.PeerAddrs[0]
+					addr = strings.Replace(addr, "127.0.0.1", master.ToIP(), 1)
+					fmt.Println("peer addr master", addr)
+					vs.p2p.Connect(addr)
+				}
+
 				backend.LoadFromPbStorageBackends(resp.StorageBackends)
 				return nil
 			})
@@ -166,6 +175,8 @@ func (vs *VolumeServer) doHeartbeat(masterAddress pb.ServerAddress, grpcDialOpti
 	rack := vs.store.GetRack()
 	ip := vs.store.Ip
 	port := uint32(vs.store.Port)
+	peerId := vs.p2p.ID()
+	peerPort := vs.p2p.Port()
 	for {
 		select {
 		case volumeMessage := <-vs.store.NewVolumesChan:
@@ -177,8 +188,8 @@ func (vs *VolumeServer) doHeartbeat(masterAddress pb.ServerAddress, grpcDialOpti
 				NewVolumes: []*master_pb.VolumeShortInformationMessage{
 					&volumeMessage,
 				},
-				Peer:     vs.peer,
-				PeerPort: uint32(vs.peerPort),
+				Peer:     peerId,
+				PeerPort: uint32(peerPort),
 			}
 			glog.V(0).Infof("volume server %s:%d adds volume %d", vs.store.Ip, vs.store.Port, volumeMessage.Id)
 			if err = stream.Send(deltaBeat); err != nil {
@@ -194,8 +205,8 @@ func (vs *VolumeServer) doHeartbeat(masterAddress pb.ServerAddress, grpcDialOpti
 				NewEcShards: []*master_pb.VolumeEcShardInformationMessage{
 					&ecShardMessage,
 				},
-				Peer:     vs.peer,
-				PeerPort: uint32(vs.peerPort),
+				Peer:     peerId,
+				PeerPort: uint32(peerPort),
 			}
 			glog.V(0).Infof("volume server %s:%d adds ec shard %d:%d", vs.store.Ip, vs.store.Port, ecShardMessage.Id,
 				erasure_coding.ShardBits(ecShardMessage.EcIndexBits).ShardIds())
@@ -212,8 +223,8 @@ func (vs *VolumeServer) doHeartbeat(masterAddress pb.ServerAddress, grpcDialOpti
 				DeletedVolumes: []*master_pb.VolumeShortInformationMessage{
 					&volumeMessage,
 				},
-				Peer:     vs.peer,
-				PeerPort: uint32(vs.peerPort),
+				Peer:     peerId,
+				PeerPort: uint32(peerPort),
 			}
 			glog.V(0).Infof("volume server %s:%d deletes volume %d", vs.store.Ip, vs.store.Port, volumeMessage.Id)
 			if err = stream.Send(deltaBeat); err != nil {
@@ -229,8 +240,8 @@ func (vs *VolumeServer) doHeartbeat(masterAddress pb.ServerAddress, grpcDialOpti
 				DeletedEcShards: []*master_pb.VolumeEcShardInformationMessage{
 					&ecShardMessage,
 				},
-				Peer:     vs.peer,
-				PeerPort: uint32(vs.peerPort),
+				Peer:     peerId,
+				PeerPort: uint32(peerPort),
 			}
 			glog.V(0).Infof("volume server %s:%d deletes ec shard %d:%d", vs.store.Ip, vs.store.Port, ecShardMessage.Id,
 				erasure_coding.ShardBits(ecShardMessage.EcIndexBits).ShardIds())
@@ -264,8 +275,8 @@ func (vs *VolumeServer) doHeartbeat(masterAddress pb.ServerAddress, grpcDialOpti
 				Rack:         rack,
 				Volumes:      volumeMessages,
 				HasNoVolumes: len(volumeMessages) == 0,
-				Peer:         vs.peer,
-				PeerPort:     uint32(vs.peerPort),
+				Peer:         peerId,
+				PeerPort:     uint32(peerPort),
 			}
 			glog.V(1).Infof("volume server %s:%d stops and deletes all volumes", vs.store.Ip, vs.store.Port)
 			if err = stream.Send(emptyBeat); err != nil {

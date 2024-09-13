@@ -16,7 +16,6 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/seaweedfs/seaweedfs/weed/util/grace"
-	"github.com/seaweedfs/seaweedfs/weed/util/p2p"
 
 	"github.com/seaweedfs/seaweedfs/weed/pb"
 	"github.com/seaweedfs/seaweedfs/weed/security"
@@ -229,7 +228,6 @@ func (v VolumeServerOptions) startVolumeServer(volumeFolders, maxVolumeCounts, v
 	if *v.portPeer == 0 {
 		*v.portPeer = 10001 + *v.port
 	}
-	peer := p2p.NewP2P(*v.portPeer)
 
 	volumeMux := http.NewServeMux()
 	publicVolumeMux := volumeMux
@@ -271,8 +269,7 @@ func (v VolumeServerOptions) startVolumeServer(volumeFolders, maxVolumeCounts, v
 		*v.hasSlowRead,
 		*v.readBufferSizeMB,
 		*v.ldbTimeout,
-		peer.Peer(),
-		peer.Port(),
+		*v.portPeer,
 	)
 	// starting grpc server
 	grpcS := v.startGrpcService(volumeServer)

@@ -2,11 +2,12 @@ package pb
 
 import (
 	"fmt"
-	"github.com/seaweedfs/seaweedfs/weed/pb/master_pb"
-	"github.com/seaweedfs/seaweedfs/weed/util"
 	"net"
 	"strconv"
 	"strings"
+
+	"github.com/seaweedfs/seaweedfs/weed/pb/master_pb"
+	"github.com/seaweedfs/seaweedfs/weed/util"
 )
 
 type ServerAddress string
@@ -42,7 +43,17 @@ func NewServerAddressFromLocation(dn *master_pb.Location) ServerAddress {
 func (sa ServerAddress) String() string {
 	return sa.ToHttpAddress()
 }
-
+func (sa ServerAddress) ToIP() string {
+	index := strings.LastIndex(string(sa), ":")
+	if index < 0 {
+		return string(sa)
+	}
+	if index+1 >= len(sa) {
+		return string(sa)
+	}
+	host := string(sa[0:index])
+	return host
+}
 func (sa ServerAddress) ToHttpAddress() string {
 	portsSepIndex := strings.LastIndex(string(sa), ":")
 	if portsSepIndex < 0 {

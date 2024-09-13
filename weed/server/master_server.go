@@ -30,6 +30,7 @@ import (
 	"github.com/seaweedfs/seaweedfs/weed/topology"
 	"github.com/seaweedfs/seaweedfs/weed/util"
 	util_http "github.com/seaweedfs/seaweedfs/weed/util/http"
+	"github.com/seaweedfs/seaweedfs/weed/util/p2p"
 	"github.com/seaweedfs/seaweedfs/weed/wdclient"
 )
 
@@ -52,6 +53,8 @@ type MasterOption struct {
 	MetricsAddress          string
 	MetricsIntervalSec      int
 	IsFollower              bool
+	Port                    int
+	PeerPort                int
 }
 
 type MasterServer struct {
@@ -78,6 +81,7 @@ type MasterServer struct {
 	adminLocks *AdminLocks
 
 	Cluster *cluster.Cluster
+	Peer    *p2p.P2P
 }
 
 func NewMasterServer(r *mux.Router, option *MasterOption, peers map[string]pb.ServerAddress) *MasterServer {
@@ -169,6 +173,13 @@ func NewMasterServer(r *mux.Router, option *MasterOption, peers map[string]pb.Se
 	if !option.IsFollower {
 		ms.startAdminScripts()
 	}
+
+	peer := p2p.NewP2P(p2p.P2POptions{
+		Port:   option.PeerPort,
+		Master: true,
+	})
+	fmt.Println("peer p2ps", peer.GetPeerAddr())
+	glog.V(0).Infof("Start Seaweed Master PeerServer %s", peer.GetPeerAddr())
 
 	return ms
 }

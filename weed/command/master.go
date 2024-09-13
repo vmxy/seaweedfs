@@ -38,6 +38,7 @@ var (
 type MasterOptions struct {
 	port                       *int
 	portGrpc                   *int
+	portPeer                   *int
 	ip                         *string
 	ipBind                     *string
 	metaFolder                 *string
@@ -65,6 +66,7 @@ func init() {
 	cmdMaster.Run = runMaster // break init cycle
 	m.port = cmdMaster.Flag.Int("port", 9333, "http listen port")
 	m.portGrpc = cmdMaster.Flag.Int("port.grpc", 0, "grpc listen port")
+	m.portPeer = cmdMaster.Flag.Int("port.peer", 0, "peer listen port")
 	m.ip = cmdMaster.Flag.String("ip", util.DetectedHostAddress(), "master <ip>|<server> address, also used as identifier")
 	m.ipBind = cmdMaster.Flag.String("ip.bind", "", "ip address to bind to. If empty, default to same as -ip option.")
 	m.metaFolder = cmdMaster.Flag.String("mdir", os.TempDir(), "data directory to store meta data")
@@ -148,6 +150,9 @@ func startMaster(masterOption MasterOptions, masterWhiteList []string) {
 	}
 	if *masterOption.ipBind == "" {
 		*masterOption.ipBind = *masterOption.ip
+	}
+	if *masterOption.portPeer == 0 {
+		*masterOption.portPeer = 10001 + *masterOption.port
 	}
 
 	myMasterAddress, peers := checkPeers(*masterOption.ip, *masterOption.port, *masterOption.portGrpc, *masterOption.peers)
@@ -325,5 +330,7 @@ func (m *MasterOptions) toMasterOption(whiteList []string) *weed_server.MasterOp
 		DisableHttp:             *m.disableHttp,
 		MetricsAddress:          *m.metricsAddress,
 		MetricsIntervalSec:      *m.metricsIntervalSec,
+		PeerPort:                *m.portPeer,
+		Port:                    *m.port,
 	}
 }

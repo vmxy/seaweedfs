@@ -8,6 +8,7 @@ import (
 	"github.com/seaweedfs/seaweedfs/weed/pb"
 	"github.com/seaweedfs/seaweedfs/weed/pb/volume_server_pb"
 	"github.com/seaweedfs/seaweedfs/weed/storage/types"
+	"github.com/seaweedfs/seaweedfs/weed/util/p2p"
 
 	"google.golang.org/grpc"
 
@@ -50,8 +51,7 @@ type VolumeServer struct {
 	fileSizeLimitBytes      int64
 	isHeartbeating          bool
 	stopChan                chan bool
-	peer                    string
-	peerPort                int
+	p2p                     p2p.P2P
 }
 
 func NewVolumeServer(adminMux, publicMux *http.ServeMux, ip string,
@@ -72,7 +72,6 @@ func NewVolumeServer(adminMux, publicMux *http.ServeMux, ip string,
 	hasSlowRead bool,
 	readBufferSizeMB int,
 	ldbTimeout int64,
-	peer string,
 	peerPort int,
 ) *VolumeServer {
 
@@ -106,14 +105,18 @@ func NewVolumeServer(adminMux, publicMux *http.ServeMux, ip string,
 		hasSlowRead:                   hasSlowRead,
 		readBufferSizeMB:              readBufferSizeMB,
 		ldbTimout:                     ldbTimeout,
-		peer:                          peer,
-		peerPort:                      peerPort,
 	}
+
+	peer := p2p.NewP2P(p2p.P2POptions{
+		Port:       peerPort,
+		ServerPort: port,
+	})
+	vs.p2p = peer
 	vs.SeedMasterNodes = masterNodes
 
 	vs.checkWithMaster()
 
-	vs.store = storage.NewStore(vs.grpcDialOption, ip, port, grpcPort, publicUrl, folders, maxCounts, minFreeSpaces, idxFolder, vs.needleMapKind, diskTypes, ldbTimeout, peer, peerPort)
+	vs.store = storage.NewStore(vs.grpcDialOption, ip, port, grpcPort, publicUrl, folders, maxCounts, minFreeSpaces, idxFolder, vs.needleMapKind, diskTypes, ldbTimeout, peer.ID(), peerPort)
 	vs.guard = security.NewGuard(whiteList, signingKey, expiresAfterSec, readSigningKey, readExpiresAfterSec)
 
 	handleStaticResources(adminMux)

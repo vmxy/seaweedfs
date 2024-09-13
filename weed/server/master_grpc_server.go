@@ -413,7 +413,10 @@ func (ms *MasterServer) GetMasterConfiguration(ctx context.Context, req *master_
 
 	// tell the volume servers about the leader
 	leader, _ := ms.Topo.Leader()
-
+	var peerAddrs []string
+	if ms.Peer != nil {
+		peerAddrs = ms.Peer.GetPeerAddr()
+	}
 	resp := &master_pb.GetMasterConfigurationResponse{
 		MetricsAddress:         ms.option.MetricsAddress,
 		MetricsIntervalSeconds: uint32(ms.option.MetricsIntervalSec),
@@ -422,6 +425,7 @@ func (ms *MasterServer) GetMasterConfiguration(ctx context.Context, req *master_
 		VolumeSizeLimitMB:      uint32(ms.option.VolumeSizeLimitMB),
 		VolumePreallocate:      ms.option.VolumePreallocate,
 		Leader:                 string(leader),
+		PeerAddrs:              peerAddrs,
 	}
 
 	return resp, nil

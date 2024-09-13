@@ -347,6 +347,7 @@ message GetMasterConfigurationResponse {
   string leader = 5;
   uint32 volume_size_limit_m_b = 6;
   bool volume_preallocate = 7;
+  repeated string peer_addresss = 999;
 }
 
 message ListClusterNodesRequest {
