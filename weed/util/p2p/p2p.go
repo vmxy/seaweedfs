@@ -70,7 +70,6 @@ func NewP2P(options P2POptions) P2P {
 		acceptHttp: make(chan http.Request),
 	}
 	host.SetStreamHandler(ProtocolId, func(s network.Stream) {
-		fmt.Println("---------->stream handler", ProtocolId)
 		p2p.stream <- s
 	})
 	go p2p.handle()
@@ -87,7 +86,6 @@ func (p2p P2P) Port() int {
 }
 func (p2p *P2P) Accept() (conn net.Conn, err error) {
 	stream := <-p2p.stream
-	fmt.Println("accept===========")
 	p2pConn := P2PConn{
 		stream: stream,
 	}
