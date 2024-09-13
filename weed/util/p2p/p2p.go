@@ -115,21 +115,18 @@ func (p2p *P2P) handle() {
 		//reader := bufio.NewReader(conn)
 		//writer := bufio.NewWriter(conn)
 		//rw := bufio.NewReadWriter(reader, writer)
-		requestLineBytes := make([]byte, 2048)
-		size, err := conn.Read(requestLineBytes)
+		readBytes := make([]byte, 2048)
+		size, err := conn.Read(readBytes)
 		if err != nil || size < 1 {
 			conn.Close()
 			continue
 		}
-		requestLineBytes = requestLineBytes[0:size]
+		readBytes = readBytes[0:size]
+		fmt.Println("read====", err, string(readBytes), isHttp(readBytes), len(readBytes))
 
-		if err != nil {
-			log.Fatal(err)
-			continue
-		}
-		if isHttp(requestLineBytes) {
-			p2p.handleHttp(requestLineBytes, conn)
-
+		if isHttp(readBytes) {
+			fmt.Println("is http request=====")
+			p2p.handleHttp(readBytes, conn)
 		}
 	}
 }
@@ -139,7 +136,7 @@ func isHttp(bytes []byte) bool {
 	}
 	input := string(bytes[0:7])
 	vs := strings.Split(input, " ")
-	if len(vs) < 3 {
+	if len(vs) < 2 {
 		return false
 	}
 	reg := `^(GET|HEAD|PUT|POST|DELETE|OPTIONS|TRACE|CONNECT)`
