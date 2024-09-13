@@ -35,7 +35,6 @@ func (vs *VolumeServer) checkWithMaster() (err error) {
 					return fmt.Errorf("get master %s configuration: %v", master, err)
 				}
 				vs.metricsAddress, vs.metricsIntervalSec = resp.MetricsAddress, int(resp.MetricsIntervalSeconds)
-				fmt.Println("address======", resp, master.ToIP())
 				if len(resp.PeerAddrs) > 0 {
 					addr := resp.PeerAddrs[0]
 					addr = strings.Replace(addr, "127.0.0.1", master.ToIP(), 1)
