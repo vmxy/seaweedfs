@@ -107,7 +107,6 @@ func (p2p *P2P) HandleHttp(handle func(request http.Request)) {
 func (p2p *P2P) handle() {
 	for {
 		conn, err := p2p.Accept()
-		fmt.Println("handle======xxxxxx")
 		if err != nil {
 			log.Fatal(err)
 			continue
@@ -122,10 +121,8 @@ func (p2p *P2P) handle() {
 			continue
 		}
 		readBytes = readBytes[0:size]
-		fmt.Println("read====", err, string(readBytes), isHttp(readBytes), len(readBytes))
 
 		if isHttp(readBytes) {
-			fmt.Println("is http request=====")
 			p2p.handleHttp(readBytes, conn)
 		}
 	}
@@ -144,8 +141,37 @@ func isHttp(bytes []byte) bool {
 	return r.MatchString(input)
 }
 func (p2p *P2P) handleHttp(bytes []byte, local net.Conn) {
-	fmt.Println("server req=============", string(bytes))
-	conn, err := net.Dial("tcp", fmt.Sprintf("127.0.0.1:%d", p2p.serverPort))
+	reader := bufio.NewReader(strings.NewReader(string(bytes)))
+	var headers map[string]string = make(map[string]string)
+	var list []string = make([]string, 0)
+	reHost := regexp.MustCompile("^(?i)Host$")
+	var host string = fmt.Sprintf("127.0.0.1:%d", p2p.serverPort)
+	for i := 0; true; i++ {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			continue
+		}
+		if line == "\r\n" {
+			break
+		}
+		line = strings.TrimSpace(line)
+		if i > 0 {
+			kv := strings.Split(line, ": ")
+			if reHost.MatchString(kv[0]) {
+				hp := strings.Split(kv[1], ":")
+				if len(hp) < 2 {
+					kv[1] = kv[1] + ":80"
+				}
+				host = kv[1]
+			}
+
+			headers[kv[0]] = kv[1]
+		}
+		list = append(list, line)
+	}
+
+	bytes = []byte(strings.Join(list, "\r\n") + "\r\n\r\n")
+	conn, err := net.Dial("tcp", host)
 	if err != nil {
 		local.Close()
 		return
@@ -162,10 +188,11 @@ func (p2p *P2P) handleHttp(bytes []byte, local net.Conn) {
 		}
 	}()
 	go func() {
-		bytes := make([]byte, 2048)
 		for {
+			bytes := make([]byte, 2048)
 			size, err := conn.Read(bytes)
 			if err != nil {
+				local.Close()
 				if err == io.EOF {
 					break
 				}
@@ -175,7 +202,7 @@ func (p2p *P2P) handleHttp(bytes []byte, local net.Conn) {
 			local.Write(bytes[0:size])
 		}
 	}()
-	conn.Write([]byte(bytes))
+	conn.Write(bytes)
 }
 func (p2p *P2P) Connect(peerAddr string) {
 	host := *p2p.host
@@ -193,12 +220,12 @@ func (p2p *P2P) Connect(peerAddr string) {
 	if err != nil {
 		log.Println("p2p connect error", peerAddr, err)
 	}
-	fmt.Println("connect====", err, info.ID, host.Peerstore().Addrs(info.ID))
 }
 
 // CustomTransport 实现了 http.RoundTripper 接口
 type CustomTransport struct {
-	Conn net.Conn
+	Conn              net.Conn
+	DisableKeepAlives bool
 }
 
 // RoundTrip 实现了 http.RoundTripper 接口
@@ -219,7 +246,8 @@ func (t *CustomTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 func NewHttpRequest(method string, url string, body io.Reader, conn net.Conn) (resp *http.Response, err error) {
 	// 创建自定义的 RoundTripper
 	transport := &CustomTransport{
-		Conn: conn,
+		Conn:              conn,
+		DisableKeepAlives: true,
 	}
 	client := &http.Client{
 		Transport: transport,
@@ -271,7 +299,6 @@ func (p2p *P2P) OpenStream(peerAddr string) (conn net.Conn, err error) {
 		log.Println(err)
 		return nil, err
 	}
-	log.Println("Established connection to destination")
 	p2pConn := P2PConn{
 		stream: stream,
 	}
